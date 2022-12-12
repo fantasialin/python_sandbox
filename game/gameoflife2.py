@@ -3,7 +3,7 @@
 
 # ref https://en.wikipedia.org/wiki/Conway's_Game_of_Life
 #     http://trevorappleton.blogspot.com/2013/07/python-game-of-life.html
-#  python gameoflife.py
+#  python gameoflife2.py
 
 import pygame, sys
 from pygame.locals import *
@@ -49,11 +49,12 @@ class game_of_life:
         y = cell[1]
         y = y * self.cell_size # translates array into grid size
         x = x * self.cell_size # translates array into grid size
+        rect = pygame.Rect(x, y, self.cell_size, self.cell_size)
         if self.life[cell] == 0:
-            pygame.draw.rect(self.surface, self.cell_blank_color, (x, y, self.cell_size, self.cell_size))
+            pygame.draw.rect(self.surface, self.cell_blank_color, rect)
         if self.life[cell] == 1:
-            pygame.draw.rect(self.surface, self.cell_color, (x, y, self.cell_size, self.cell_size))
-        return None
+            pygame.draw.rect(self.surface, self.cell_color, rect)
+
 
     def showLife(self):
         for cell in self.life:
