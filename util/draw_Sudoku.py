@@ -53,11 +53,19 @@ class numberBoard:
     
     def draw(self):
         for i in range (9):
-            rect = self.buttons[i]
-            pygame.draw.rect(self.surface, light_gray, rect)
-            pygame.draw.rect(self.surface, dark_gray, rect, 2)
-            text_surface = self.text[i]
-            self.surface.blit(text_surface,text_surface.get_rect(center=rect.center))
+            if self.num[i] != 0:
+                rect = self.buttons[i]
+                pygame.draw.rect(self.surface, light_gray, rect)
+                pygame.draw.rect(self.surface, dark_gray, rect, 2)
+                text_surface = self.text[i]
+                self.surface.blit(text_surface,text_surface.get_rect(center=rect.center))
+
+    def reset(self):
+        self.num =  [x for x in range(1,10)]
+
+    def disableNumber(self, number):
+        if number >0 and number <=0 :
+            self.num[number-1] = 0
 
     def onSelected(self,position):
         #print(">> x, y ", position, " ( ", position[0], " , ", position[1], " )")
@@ -68,6 +76,45 @@ class numberBoard:
                     #print("press >> ", self.num[i])
                     #need callback to Sudoku board
                     self.owner.setNumber(self.num[i])
+                    break
+
+class funcBotton:
+    def __init__(self, surface, startX, startY, blockSize, gap, owner):
+        self.surface = surface
+        self.startX = startX
+        self.startY = startY
+        self.shiftWidth = startX+(blockSize*6)+gap*1
+        self.shiftHeight = blockSize+startY
+        self.blockSize = blockSize
+        self.gap = gap
+        self.owner = owner
+        self.buttons = []
+        self.text = []
+        self.text.append(font.render('erase', False, black))
+        self.buttons.append(pygame.Rect(self.startX, self.startY, self.blockSize*3, self.blockSize))
+        self.text.append(font.render('reset', False, black))
+        self.buttons.append(pygame.Rect(self.startX+(self.blockSize*3)+self.gap, self.startY, self.blockSize*3, self.blockSize))
+        self.count = 2
+
+    def draw(self):
+        for i in range(self.count):
+            rect = self.buttons[i]
+            pygame.draw.rect(self.surface, light_gray, rect)
+            pygame.draw.rect(self.surface, dark_gray, rect, 2)
+            text_surface = self.text[i]
+            self.surface.blit(text_surface,text_surface.get_rect(center=rect.center))
+    
+    def onSelected(self,position):
+        #print(">> x, y ", position, " ( ", position[0], " , ", position[1], " )")
+        if((position[0] >= self.startX and  position[0] <= self.shiftWidth) 
+            and (position[1] >= self.startY and position[1] <= self.shiftHeight)):
+            for i in range (self.count):
+                if(True == self.buttons[i].collidepoint(position)):
+                    #need callback to Sudoku board
+                    if i == 0:
+                        self.owner.erase()
+                    elif i == 1:
+                        self.owner.reset()
                     break
 
 class SudokuBoard:
@@ -99,6 +146,18 @@ class SudokuBoard:
             self.textwarning.append(font.render(str(i), False, red))
 
         self.input = numberBoard(surface, startX, startY+blockSize*9+10, blockSize-10, 10, self)  # "10" is gap between buttons
+        self.funcBotton = funcBotton(surface, startX, startY+blockSize*9+10+30+10, blockSize-10, 10, self)
+
+    def reset(self):
+        print("Reset>>")
+        pass
+
+    def erase(self):
+        print("Erase>>")
+        if(self.selected[0]>=0 and self.selected[0]<9) and (self.selected[1]>=0 and self.selected[1]<9):
+            #print("selected>>", self.selected)
+            if self.board[self.selected] != self.solution[self.selected]:
+                self.board[self.selected] = 0
 
     def setNumber(self, number):
         if(self.selected[0]>=0 and self.selected[0]<9) and (self.selected[1]>=0 and self.selected[1]<9):
@@ -121,6 +180,7 @@ class SudokuBoard:
         self.drawNumbers()
         # input pad
         self.input.draw()
+        self.funcBotton.draw()
 
     def generateNew(self):
         base  = 3
@@ -257,6 +317,7 @@ class SudokuBoard:
         else:
             # check input pad
             self.input.onSelected(position)
+            self.funcBotton.onSelected(position)
 
 
 screen.fill(white)
