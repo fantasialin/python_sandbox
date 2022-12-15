@@ -33,7 +33,7 @@ light_blue = pygame.Color(66, 245, 224)
 dark_gray = pygame.Color(100, 100, 100)
 
 class numberBoard:
-    def __init__(self, surface, startX, startY, blockSize, gap):
+    def __init__(self, surface, startX, startY, blockSize, gap, owner):
         self.surface = surface
         self.startX = startX
         self.startY = startY
@@ -41,6 +41,7 @@ class numberBoard:
         self.shiftHeight = blockSize+startY
         self.blockSize = blockSize
         self.gap = gap
+        self.owner = owner
         self.text = []
         self.num = [x for x in range(1,10)]
         #print(self.num)
@@ -64,8 +65,9 @@ class numberBoard:
             and (position[1] >= self.startY and position[1] <= self.shiftHeight)):
             for i in range (9):
                 if(True == self.buttons[i].collidepoint(position)):
-                    print("press >> ", self.num[i])
+                    #print("press >> ", self.num[i])
                     #need callback to Sudoku board
+                    self.owner.setNumber(self.num[i])
                     break
 
 class SudokuBoard:
@@ -83,6 +85,7 @@ class SudokuBoard:
         self.solution = {}
         self.text = []
         self.texthighlight = []
+        self.textwarning = []
         self.blankBoard()
         self.generateNew()
 
@@ -92,7 +95,16 @@ class SudokuBoard:
         for i in range (10):
             self.texthighlight.append(font.render(str(i), False, blue))
 
-        self.input = numberBoard(surface, startX, startY+blockSize*9+10, blockSize-10, 10)  # "10" is gap between buttons
+        for i in range (10):
+            self.textwarning.append(font.render(str(i), False, red))
+
+        self.input = numberBoard(surface, startX, startY+blockSize*9+10, blockSize-10, 10, self)  # "10" is gap between buttons
+
+    def setNumber(self, number):
+        if(self.selected[0]>=0 and self.selected[0]<9) and (self.selected[1]>=0 and self.selected[1]<9):
+            #print("selected>>", self.selected, number)
+            if((self.board[self.selected] == 0) and (number >0 and number <= 9)): # only value is 0 can be input number
+                self.board[self.selected] = number
 
 
     def blankBoard(self):
@@ -139,7 +151,7 @@ class SudokuBoard:
         #for line in board: print(line)
 
         squares = side*side
-        empties = squares * 3//4
+        empties = squares * 1//3 #squares * 3//4
         for p in sample(range(squares),empties):
             board[p//side][p%side] = 0
 
@@ -203,7 +215,9 @@ class SudokuBoard:
             #pygame.draw.rect(self.surface, green, rect)
             text_surface = None
             if(self.selected[0]>=0 and self.selected[0]<9) and (self.selected[1]>=0 and self.selected[1]<9):
-                if self.board[cell] == self.board[self.selected]:
+                if self.board[cell] != self.solution[cell]:
+                    text_surface = self.textwarning[self.board[cell]]
+                elif self.board[cell] == self.board[self.selected]:
                     text_surface = self.texthighlight[self.board[cell]]
                 else:
                     text_surface = self.text[self.board[cell]]
