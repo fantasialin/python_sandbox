@@ -50,8 +50,10 @@ class numberBoard:
         self.buttons = []
         for i in range(9):
             self.buttons.append(pygame.Rect(self.startX+(i*(self.blockSize+self.gap)), self.startY, self.blockSize, self.blockSize))
+        self.rect0 = pygame.Rect(startX, startY, self.shiftWidth - startX, self.shiftHeight - startY)
     
     def draw(self):
+        pygame.draw.rect(self.surface, white, self.rect0) # entire board
         for i in range (9):
             if self.num[i] != 0:
                 rect = self.buttons[i]
@@ -64,7 +66,8 @@ class numberBoard:
         self.num =  [x for x in range(1,10)]
 
     def disableNumber(self, number):
-        if number >0 and number <=0 :
+        if number >0 and number <=9 and self.num[number-1] != 0:
+            print("disable >> ", number)
             self.num[number-1] = 0
 
     def onSelected(self,position):
@@ -133,6 +136,7 @@ class SudokuBoard:
         self.text = []
         self.texthighlight = []
         self.textwarning = []
+        self.numCount = [x for x in range(10)]
         self.blankBoard()
         self.generateNew()
 
@@ -149,11 +153,15 @@ class SudokuBoard:
         self.funcBotton = funcBotton(surface, startX, startY+blockSize*9+10+30+10, blockSize-10, 10, self)
 
     def reset(self):
-        print("Reset>>")
+        #print("Reset>>")
+        self.selected = (9,9)
+        self.blankBoard()
+        self.generateNew()
+        self.input.reset()
         pass
 
     def erase(self):
-        print("Erase>>")
+        #print("Erase>>")
         if(self.selected[0]>=0 and self.selected[0]<9) and (self.selected[1]>=0 and self.selected[1]<9):
             #print("selected>>", self.selected)
             if self.board[self.selected] != self.solution[self.selected]:
@@ -279,15 +287,31 @@ class SudokuBoard:
                     text_surface = self.textwarning[self.board[cell]]
                 elif self.board[cell] == self.board[self.selected]:
                     text_surface = self.texthighlight[self.board[cell]]
+                    self.numCount[self.board[cell]] += 1
+                    if self.numCount[self.board[cell]] == 9:
+                        self.input.disableNumber(self.board[cell])
+                        #print("aa>> ", self.board[cell], " count ", self.numCount[self.board[cell]])
+                        #self.selected = (9,9)
                 else:
                     text_surface = self.text[self.board[cell]]
+                    self.numCount[self.board[cell]] += 1
+                    if self.numCount[self.board[cell]] == 9:
+                        self.input.disableNumber(self.board[cell])
+                        #print(">> ", self.board[cell], " count ", self.numCount[self.board[cell]])
             else:
                 text_surface = self.text[self.board[cell]]
+                self.numCount[self.board[cell]] +=  1
+                if self.numCount[self.board[cell]] == 9:
+                        self.input.disableNumber(self.board[cell])
             self.surface.blit(text_surface,text_surface.get_rect(center=rect.center))
         
     def drawNumbers(self):
+        #clean count
+        for x in range(10):
+            self.numCount[x] = 0
         for cell in self.board:
             self.drawCell(cell)
+        print(self.numCount)
 
     def drawBackground(self):
         rect0 = pygame.Rect(self.startX, self.startY, self.blockSize*9, self.blockSize*9)
