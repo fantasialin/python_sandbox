@@ -5,6 +5,8 @@ import pygame, sys
 from pygame.locals import *
 import random
 from enum import IntEnum
+#import optimal.solver as sv
+import twophase.solver  as sv
 
 #Number of frames per second
 FPS = 10
@@ -54,63 +56,6 @@ class Edge(IntEnum):
     BL = 10
     BR = 11
 
-
-class Facelet(IntEnum):
-    U1 = 0
-    U2 = 1
-    U3 = 2
-    U4 = 3
-    U5 = 4
-    U6 = 5
-    U7 = 6
-    U8 = 7
-    U9 = 8
-    R1 = 9
-    R2 = 10
-    R3 = 11
-    R4 = 12
-    R5 = 13
-    R6 = 14
-    R7 = 15
-    R8 = 16
-    R9 = 17
-    F1 = 18
-    F2 = 19
-    F3 = 20
-    F4 = 21
-    F5 = 22
-    F6 = 23
-    F7 = 24
-    F8 = 25
-    F9 = 26
-    D1 = 27
-    D2 = 28
-    D3 = 29
-    D4 = 30
-    D5 = 31
-    D6 = 32
-    D7 = 33
-    D8 = 34
-    D9 = 35
-    L1 = 36
-    L2 = 37
-    L3 = 38
-    L4 = 39
-    L5 = 40
-    L6 = 41
-    L7 = 42
-    L8 = 43
-    L9 = 44
-    B1 = 45
-    B2 = 46
-    B3 = 47
-    B4 = 48
-    B5 = 49
-    B6 = 50
-    B7 = 51
-    B8 = 52
-    B9 = 53
-
 class FaceCube:
     def __init__(self, cube_string="".join(c * 9 for c in "URFDLB")):
         """
@@ -130,7 +75,7 @@ class draw_cube_face:
         self.surface = surface
         self.startX = startX
         self.startY = startY
-        self.gap = 2
+        self.gap = 1
         self.cellsize = cell_size+self.gap
         self.facesize = self.cellsize*3 #10(gaps)
         self.shiftWidth = startX + self.facesize*4 #4 faces
@@ -159,8 +104,74 @@ class draw_cube_face:
             c = self.facecube.f[idx]
             #print(self.colorlist[c])
             pygame.draw.rect(self.surface, self.colorlist[c], rect)
-            pygame.draw.rect(self.surface, dark_gray, rect, 2)
+            pygame.draw.rect(self.surface, black, rect, 2)
         pass
+
+class cube_op:
+    def __init__(self):
+        R_op_1 = [[3,6,9],[21,24,27],[30,33,36],[52,49,46],[10,11],[16,13],[18,17],[12,15]]
+        R_op_2 = [[52,49,46],[3,6,9],[21,24,27],[30,33,36],[12,15],[10,11],[16,13],[18,17]]
+        self.R_rotate = [R_op_1, R_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        L_op_1 = [[1,4,7],[19,22,25],[28,31,34],[54,51,48],[37,38],[39,42],[45,44],[43,40]]
+        L_op_2 = [[19,22,25],[28,31,34],[54,51,48],[1,4,7],[39,42],[45,44],[43,40],[37,38]]
+        self.L_rotate = [L_op_1, L_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        U_op_1 = [[19,20,21],[10,11,12],[46,47,48],[37,38,39],[3,6],[9,8],[7,4],[1,2]]
+        U_op_2 = [[37,38,39],[19,20,21],[10,11,12],[46,47,48],[9,8],[7,4],[1,2],[3,6]]
+        self.U_rotate = [U_op_1, U_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        D_op_1 = [[25,26,27],[16,17,18],[52,53,54],[43,44,45],[28,29],[30,33],[36,35],[34,31]]
+        D_op_2 = [[16,17,18],[52,53,54],[43,44,45],[25,26,27],[30,33],[36,35],[34,31],[28,29]]
+        self.D_rotate = [D_op_1, D_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        F_op_1 = [[7,8,9],[10,13,16],[30,29,28],[45,42,39],[19,20],[21,24],[27,26],[25,22]]
+        F_op_2 = [[10,13,16],[30,29,28],[45,42,39],[7,8,9],[21,24],[27,26],[25,22],[19,20]]
+        self.F_rotate = [F_op_1, F_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        B_op_1 = [[1,2,3],[12,15,18],[36,35,34],[43,40,37],[46,47],[48,51],[54,53],[52,49]]
+        B_op_2 = [[43,40,37],[1,2,3],[12,15,18],[36,35,34],[48,51],[54,53],[52,49],[46,47]]
+        self.B_rotate = [B_op_1, B_op_2] # op_1 --> op_2 CW, op_2 -> op_1 CCW
+        self.ops = ['F', 'R', 'B', 'L', 'U', 'D']
+        self.ops_target = [self.F_rotate, self.R_rotate, self.B_rotate, self.L_rotate, self.U_rotate, self.D_rotate]
+
+    def doOPS(self, facecube, target):
+        idx = self.ops.index(target[0])
+        #print("doOPS>>", target[0], " >> ", target[1], " idx >>", idx)
+        if int(target[1]) == 3:          
+            self.ROTATE(facecube,self.ops_target[idx], False)#print("do CCW")
+        else:
+            for i in range(int(target[1])):
+                self.ROTATE(facecube,self.ops_target[idx], True)#print("do CW")
+
+
+    def ROTATE(self, facecube, target, cw):  #cw ==True => CW, else CCW
+        tmp = list(facecube.f)
+        for idx in range(len(target[0])):
+            f,t = None, None
+            if cw == True:
+                f = target[0][idx]
+                t = target[1][idx]
+            else:
+                f = target[1][idx]
+                t = target[0][idx]
+            for i in range(len(f)):
+                tmp[t[i]-1] = facecube.f[f[i]-1]
+        facecube.f = list(tmp)
+
+    def R_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.R_rotate, isCW)
+ 
+    def L_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.L_rotate, isCW)
+        
+    def U_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.U_rotate, isCW)
+
+    def D_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.D_rotate, isCW)
+
+    def F_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.F_rotate, isCW)
+
+    def B_RCW(self, facecube, isCW):
+        self.ROTATE(facecube, self.B_rotate, isCW)
+
 
 class cube_solver:
     def __init__(self, surface, width, height, cell_size):
@@ -179,7 +190,19 @@ CellSize = 20
 assert screen_width % CellSize == 0, "Window width must be a multiple of cell size"
 assert screen_height % CellSize == 0, "Window height must be a multiple of cell size"
 
+CW, ACW = 'CLOCKWISE', 'ANTICLOCKWISE'
+F, B = 'FRONT', 'BACK'
+R, L = 'RIGHT', 'LEFT'
+U, D = 'UP', 'DOWN'
 
+MOVE_KEY_MAP = {
+    pygame.K_f: F,
+    pygame.K_b: B,
+    pygame.K_l: L,
+    pygame.K_r: R,
+    pygame.K_u: U,
+    pygame.K_d: D,
+}
 
 
 def main():
@@ -188,16 +211,34 @@ def main():
     surface = pygame.display.set_mode((screen_width,screen_height)) 
     surface.fill(white)
     fpsClock = pygame.time.Clock()
-    
-    #cube_faces = FaceCube() #FaceCube("UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB")
+    cubestring = 'DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL'
     #cube_faces = FaceCube("FDLUUURLFLBDFRRDLBBBUBFLDDLFBBUDUBRLURDFLRUFRFLRFBDUDR")
-    cube_faces = FaceCube("DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL")
+    cube_faces = FaceCube(cubestring)
+    #cube_faces = FaceCube() #FaceCube("UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB")
 
     #print(cube_faces.to_string())
+    sol_string = sv.solve(cubestring) 
+    sol_steps = sol_string.split(' ')
+    print(">>", sol_steps)
+    
+
 
     # init game of life object
     #cube_game = cube_solver(surface, screen_width, screen_height, CellSize)
     cube_draw = draw_cube_face(surface, 100, 100, CellSize, cube_faces)
+    op = cube_op()
+    #op.R_RCW(cube_faces)
+
+    for ops in sol_steps:
+        if ops[0] in op.ops:
+            #print(">>", ops)
+            pass
+        else:
+            sol_steps.remove(ops) # remove not ops string
+
+    supress_key_in = False
+    solved = False
+    current_steps = 0
 
     #main game loop
     while True:
@@ -205,6 +246,37 @@ def main():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                direction = ACW if keys[pygame.K_RSHIFT] or keys[pygame.K_LSHIFT] else CW
+                if event.key in MOVE_KEY_MAP:
+                    face = MOVE_KEY_MAP[event.key]
+                    #print("op>> ", face, " direction>> ", direction)
+                    if not supress_key_in:
+                        if face == R:
+                            op.R_RCW(cube_faces, direction == CW)
+                        elif face == L:
+                            op.L_RCW(cube_faces, direction == CW)
+                        elif face == U:
+                            op.U_RCW(cube_faces, direction == CW)
+                        elif face == D:
+                            op.D_RCW(cube_faces, direction == CW)
+                        elif face == F:
+                            op.F_RCW(cube_faces, direction == CW)
+                        elif face == B:
+                            op.B_RCW(cube_faces, direction == CW)
+                elif event.key == pygame.K_SPACE:
+                    print(">>>",cube_faces.to_string())
+                elif event.key == pygame.K_s:# step to solve
+                    supress_key_in = True
+                    if not solved:
+                        do_op = sol_steps[current_steps]
+                        print(">>", do_op)
+                        op.doOPS(cube_faces, do_op)
+                        current_steps += 1 # next step
+                        if current_steps >= len(sol_steps):
+                            solved = True
+                            print("Done, Solved!")
 
         #cube_game.draw()
         cube_draw.draw()
