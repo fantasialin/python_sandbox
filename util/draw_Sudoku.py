@@ -46,7 +46,7 @@ class numberBoard:
         self.num = [x for x in range(1,10)]
         #print(self.num)
         for i in self.num:
-            self.text.append(font.render(str(i), False, black))
+            self.text.append(font.render(str(i), True, black))
         self.buttons = []
         for i in range(9):
             self.buttons.append(pygame.Rect(self.startX+(i*(self.blockSize+self.gap)), self.startY, self.blockSize, self.blockSize))
@@ -93,9 +93,9 @@ class funcBotton:
         self.owner = owner
         self.buttons = []
         self.text = []
-        self.text.append(font.render('erase', False, black))
+        self.text.append(font.render('erase', True, black))
         self.buttons.append(pygame.Rect(self.startX, self.startY, self.blockSize*3, self.blockSize))
-        self.text.append(font.render('reset', False, black))
+        self.text.append(font.render('reset', True, black))
         self.buttons.append(pygame.Rect(self.startX+(self.blockSize*3)+self.gap, self.startY, self.blockSize*3, self.blockSize))
         self.count = 2
 
@@ -141,13 +141,13 @@ class SudokuBoard:
         self.generateNew()
 
         for i in range (10):
-            self.text.append(font.render(str(i), False, black))
+            self.text.append(font.render(str(i), True, black))
 
         for i in range (10):
-            self.texthighlight.append(font.render(str(i), False, blue))
+            self.texthighlight.append(font.render(str(i), True, blue))
 
         for i in range (10):
-            self.textwarning.append(font.render(str(i), False, red))
+            self.textwarning.append(font.render(str(i), True, red))
 
         self.input = numberBoard(surface, startX, startY+blockSize*9+10, blockSize-10, 10, self)  # "10" is gap between buttons
         self.funcBotton = funcBotton(surface, startX, startY+blockSize*9+10+30+10, blockSize-10, 10, self)
